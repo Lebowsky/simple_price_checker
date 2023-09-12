@@ -184,6 +184,7 @@ class HashMap:
             if element not in lst:
                 lst.append(element)
                 self.put(cv_list, json.dumps(lst, ensure_ascii=False))
+
         else:
             lst = self.get(cv_list)
             lst = lst.split(';') if lst else []
@@ -195,17 +196,19 @@ class HashMap:
         self,
         element: Union[str, dict],
         cv_list: Literal['green_list', 'yellow_list', 'red_list', 'gray_list',
-                         'hidden_list', 'object_info_list', 'stop_listener_list',
-                         'object_caption_list', 'object_detector_mode'],
+                         'blue_list', 'hidden_list', 'object_info_list',
+                         'stop_listener_list', 'object_caption_list',
+                         'object_detector_mode'],
         _dict: bool = False
     ):
         """Удаляет из cv-списка"""
         if _dict:
             lst = self.get(cv_list, from_json=True) or []
-            item = next((item for item in lst if item['object'] == element), None)
-            if item:
-                lst.remove(item)
+            try:
+                lst.remove(element)
                 self.put(cv_list, json.dumps(lst, ensure_ascii=False))
+            except ValueError:
+                pass
         else:
             lst = self.get(cv_list)
             lst = lst.split(';') if lst else []
