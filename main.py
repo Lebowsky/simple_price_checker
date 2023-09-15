@@ -4,6 +4,7 @@ from java import jclass
 from ru.travelfood.simple_ui import SimpleUtilites as suClass
 
 import ui_models
+from ui_utils import HashMap
 
 noClass = jclass("ru.travelfood.simple_ui.NoSQL")
 rs_settings = noClass("rs_settings")
@@ -11,7 +12,7 @@ prices_ncl = noClass("price_ncl")
 yellow_list_ncl = noClass("yellow_list_ncl")
 price_valid_ncl = noClass("price_valid_ncl")
 counter_ncl = noClass("counter_ncl")
-from ui_utils import HashMap
+
 @HashMap()
 def app_before_on_start(hash_map: HashMap):
     """
@@ -21,7 +22,6 @@ def app_before_on_start(hash_map: HashMap):
 
     model = ui_models.MainEvents(hash_map, rs_settings)
     model.app_before_on_start()
-
 
 @HashMap()
 def app_on_start(hash_map: HashMap):
@@ -130,14 +130,10 @@ def save_to_suip(hash_map: HashMap):  # Соб:onInput listener: btn_save Дей
 def on_create(hash_map: HashMap):
     hash_map.delete('price_checker_info')
     hash_map.put('CVDetectors', 'barcode')
-    # hash_map.put('CVSkipNested', '')
-    # yellow_list_ncl.destroy()
     price_valid_ncl.destroy()
     counter_ncl.destroy()
-    # hash_map.delete('red_list')
-    # hash_map.delete('green_list')
-    # hash_map.delete('yellow_list')
-
+    hash_map.delete('last_error_barcode')
+    hash_map.delete('last_error_obj_id')
 
 def write_caption(hash_map: HashMap, object_id: int, caption: str):
     odm_list = hash_map.get('object_detector_mode')
@@ -173,21 +169,9 @@ def decline_object(hash_map: HashMap, object_id: int, barcode: str, item: dict):
 def barcode_input(hash_map: HashMap, current_object_id: int, barcode: str):
     in_processing = yellow_list_ncl.get(barcode)
     if in_processing and current_object_id in json.loads(in_processing):
-        finds_count = counter_ncl.get(str(current_object_id)) or 0
-        if finds_count > 4:
-            hash_map.add_to_cv_list(
-                {'object_id': current_object_id, 'mode': 'stop'},
-                'object_detector_mode', _dict=True)
-        else:
-            counter_ncl.put(str(current_object_id), finds_count + 1, True)
-
+        return
     item = prices_ncl.get(barcode)
     if not item:
-        # Возможна логика для штрихкодов не из этого документа
-        hash_map.add_to_cv_list(
-            {'object_id': current_object_id, 'mode': 'stop'},
-            'object_detector_mode', _dict=True)
-        hash_map.toast('Штрихкод: ' + barcode + " не найден в базе")
         return
     item = json.loads(item)
     confirmed = item.get('confirmed')
@@ -207,8 +191,6 @@ def barcode_input(hash_map: HashMap, current_object_id: int, barcode: str):
 
 
 def price_input(hash_map: HashMap, current_object_id: int, price: str):
-    if len(price) == 1:
-        return
     barcode = None
     for key in json.loads(yellow_list_ncl.getallkeys()):
         if current_object_id in json.loads(yellow_list_ncl.get(key)):
@@ -233,7 +215,7 @@ def price_input(hash_map: HashMap, current_object_id: int, price: str):
         if not errors:
             price_valid_ncl.put(barcode, json.dumps([price]), True)
             hash_map.put('price_checker_info', f"{barcode} Реальная цена: {item['price']} Найдено: {errors}")
-        elif len(errors) < 6:
+        elif len(errors) < 5:
             price_valid_ncl.put(barcode,json.dumps(errors + [price]), True)
             hash_map.put('price_checker_info', f"{barcode} Реальная цена: {item['price']} Найдено: {errors + [price]}")
         else:
@@ -241,6 +223,8 @@ def price_input(hash_map: HashMap, current_object_id: int, price: str):
             item.update(confirmed=False)
             prices_ncl.put(barcode, json.dumps(item), True)
             hash_map.playsound('error')
+            hash_map.put('last_error_barcode', barcode)
+            hash_map.put('last_error_obj_id', str(current_object_id))
 
 
 def is_dm_stop(hash_map: HashMap, object_id: int):
@@ -261,10 +245,35 @@ def ob_detected(hash_map: HashMap):
     if is_dm_stop(hash_map, current_object['object_id']):
         return
     obj_value = current_object['value']
-    if not obj_value:
+    if not obj_value or len(current_object['value']) > 19:
         return
     if is_valid_barcode(obj_value):
         barcode_input(hash_map, current_object['object_id'], obj_value)
     else:
+        if not 1 < len(obj_value) < 7:
+            return
         price_input(hash_map, current_object['object_id'], obj_value)
 
+@HashMap()
+def reset_last_error(hash_map: HashMap):
+    """Сбрасывает ошибку цены у последнего ценника с неверной ценой"""
+    barcode = hash_map.get('last_error_barcode')
+    if not barcode:
+        hash_map.toast('Нет ошибок')
+        return
+    item = json.loads(prices_ncl.get(barcode))
+    item['confirmed'] = None
+    prices_ncl.put(barcode, json.dumps(item), True)
+    hash_map.delete('last_error_barcode')
+    obj_id = hash_map.get('last_error_obj_id')
+    hash_map.remove_from_cv_list(obj_id, 'yellow_list')
+    yellow_list_ncl.delete(barcode)
+    hash_map.remove_from_cv_list(obj_id, 'red_list')
+    hash_map.remove_from_cv_list(obj_id, 'green_list')
+    hash_map.remove_from_cv_list(obj_id, 'stop_listener_list')
+
+    hash_map.remove_from_cv_list({'object_id': int(obj_id), 'mode': 'stop'}, 'object_detector_mode', _dict=True)
+    hash_map.put('price_checker_info', "")
+    hash_map.delete('last_error_obj_id')
+    price_valid_ncl.destroy()
+    counter_ncl.destroy()

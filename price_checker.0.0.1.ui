@@ -178,7 +178,7 @@
                         "CVDetector": "multiscanner",
                         "CVResolution": "VGA",
                         "CVMode": "list_and_grey",
-                        "CVActionButtons": "",
+                        "CVActionButtons": "Сбросить последний результат",
                         "CVMask": "",
                         "Handlers": [
                             {
@@ -194,10 +194,19 @@
                                 "type": "python",
                                 "method": "on_create",
                                 "postExecute": ""
+                            },
+                            {
+                                "event": "OnInput",
+                                "action": "run",
+                                "type": "python",
+                                "method": "reset_last_error",
+                                "postExecute": "",
+                                "listener": "Сбросить последний результат"
                             }
                         ],
                         "CVCameraDevice": "Back",
-                        "CVInfo": "@price_checker_info"
+                        "CVInfo": "@price_checker_info",
+                        "CVAction": ""
                     }
                 ]
             }
