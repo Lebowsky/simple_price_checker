@@ -270,3 +270,26 @@ class HashMap:
             {"query": query, 'params': params},
             to_json=True
         )
+
+    def set_vision_settings(
+            self,
+            min_length: int = 1,
+            max_length: int = 20,
+            ReplaceO: bool = False,
+            ToUpcase: bool = False,
+            OnlyNumbers: bool = False
+    ):
+        """min_length - Минимальная длина текста
+           max_length - Максимальная длина текста
+           ReplaceO - Заменить буквы О на 0 (нули)
+           ToUpcase - Преобразование в верхний регистр
+           OnlyNumbers - Распознавание чисел
+"""
+        settings = {
+            "min_length": min_length,
+            "max_length": max_length,
+            "ReplaceO": ReplaceO,
+            "ToUpcase": ToUpcase,
+            "OnlyNumbers": OnlyNumbers
+        }
+        self.hash_map.put("SetVisionSettings", json.dumps(settings))

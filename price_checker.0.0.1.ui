@@ -91,6 +91,41 @@
                                         "Variable": ""
                                     },
                                     {
+                                        "type": "TextView",
+                                        "height": "wrap_content",
+                                        "width": "match_parent",
+                                        "weight": "0",
+                                        "Value": "Цeнников с ошибками",
+                                        "Variable": ""
+                                    },
+                                    {
+                                        "type": "TextView",
+                                        "height": "wrap_content",
+                                        "width": "match_parent",
+                                        "weight": "0",
+                                        "Value": "@count_declined",
+                                        "Variable": "",
+                                        "TextBold": true
+                                    },
+                                    {
+                                        "type": "TextView",
+                                        "height": "wrap_content",
+                                        "width": "match_parent",
+                                        "weight": "0",
+                                        "Value": "Ценников в noSQL базе",
+                                        "Variable": "",
+                                        "TextBold": false
+                                    },
+                                    {
+                                        "type": "TextView",
+                                        "height": "wrap_content",
+                                        "width": "match_parent",
+                                        "weight": "0",
+                                        "Value": "@count_all_nosql",
+                                        "Variable": "",
+                                        "TextBold": true
+                                    },
+                                    {
                                         "height": "wrap_content",
                                         "width": "match_parent",
                                         "weight": "0",
@@ -178,14 +213,14 @@
                         "CVDetector": "multiscanner",
                         "CVResolution": "VGA",
                         "CVMode": "list_and_grey",
-                        "CVActionButtons": "Сбросить последний результат",
+                        "CVActionButtons": "Сброс ошибки;Сброс подсчёта",
                         "CVMask": "",
                         "Handlers": [
                             {
                                 "event": "OnObjectDetected",
                                 "action": "run",
                                 "type": "python",
-                                "method": "ob_detected",
+                                "method": "on_obj_detected",
                                 "postExecute": ""
                             },
                             {
@@ -199,9 +234,9 @@
                                 "event": "OnInput",
                                 "action": "run",
                                 "type": "python",
-                                "method": "reset_last_error",
+                                "method": "on_input",
                                 "postExecute": "",
-                                "listener": "Сбросить последний результат"
+                                "listener": ""
                             }
                         ],
                         "CVCameraDevice": "Back",
