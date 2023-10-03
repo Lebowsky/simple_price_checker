@@ -6,7 +6,7 @@
         "Processes": [
             {
                 "type": "Process",
-                "ProcessName": "Синхронизация",
+                "ProcessName": "Synchronization",
                 "hidden": false,
                 "DefineOnBackPressed": false,
                 "login_screen": false,
@@ -15,7 +15,7 @@
                 "Operations": [
                     {
                         "type": "Operation",
-                        "Name": "Синхронизация",
+                        "Name": "Synchronization",
                         "Timer": false,
                         "noScroll": false,
                         "hideBottomBarScreen": true,
@@ -71,7 +71,7 @@
                                         "weight": "0",
                                         "type": "Button",
                                         "Value": "Загрузить в устройство",
-                                        "Variable": "btn_read"
+                                        "Variable": "btn_save_to_device"
                                     },
                                     {
                                         "height": "wrap_content",
@@ -131,7 +131,15 @@
                                         "weight": "0",
                                         "type": "Button",
                                         "Value": "Сохранить в suip",
-                                        "Variable": "btn_save"
+                                        "Variable": "btn_save_to_suip"
+                                    },
+                                    {
+                                        "type": "Button",
+                                        "height": "wrap_content",
+                                        "width": "wrap_content",
+                                        "weight": "0",
+                                        "Value": "Сохранить JSON",
+                                        "Variable": "btn_save_to_json"
                                     },
                                     {
                                         "type": "Button",
@@ -139,7 +147,7 @@
                                         "width": "wrap_content",
                                         "weight": "0",
                                         "Value": "Показать базу данных",
-                                        "Variable": "show_db"
+                                        "Variable": "btn_show_db"
                                     },
                                     {
                                         "type": "Button",
@@ -147,7 +155,7 @@
                                         "width": "wrap_content",
                                         "weight": "0",
                                         "Value": "Обновить базу данных",
-                                        "Variable": "refresh_db"
+                                        "Variable": "btn_refresh_db"
                                     }
                                 ],
                                 "BackgroundColor": "",
@@ -165,35 +173,10 @@
                             },
                             {
                                 "event": "onInput",
-                                "listener": "btn_read",
                                 "action": "run",
                                 "type": "python",
-                                "method": "save_to_device",
+                                "method": "sync_on_input",
                                 "postExecute": ""
-                            },
-                            {
-                                "event": "onInput",
-                                "listener": "btn_save",
-                                "action": "run",
-                                "type": "python",
-                                "method": "save_to_suip",
-                                "postExecute": ""
-                            },
-                            {
-                                "event": "onInput",
-                                "action": "run",
-                                "type": "python",
-                                "method": "show_db",
-                                "postExecute": "",
-                                "listener": "show_db"
-                            },
-                            {
-                                "event": "onInput",
-                                "action": "run",
-                                "type": "python",
-                                "method": "refresh_db",
-                                "postExecute": "",
-                                "listener": "refresh_db"
                             }
                         ],
                         "onlineOnStart": false,
@@ -203,7 +186,7 @@
                 ]
             },
             {
-                "CVOperationName": "Сканирование ценников",
+                "CVOperationName": "PriceScan",
                 "type": "CVOperation",
                 "CVFrames": [
                     {
@@ -213,7 +196,7 @@
                         "CVDetector": "multiscanner",
                         "CVResolution": "VGA",
                         "CVMode": "list_and_grey",
-                        "CVActionButtons": "Сброс ошибки;Сброс подсчёта",
+                        "CVActionButtons": "Сброс последнего;Сброс подсчёта",
                         "CVMask": "",
                         "Handlers": [
                             {
@@ -244,6 +227,119 @@
                         "CVAction": ""
                     }
                 ]
+            },
+            {
+                "ProcessName": "Settings",
+                "type": "Process",
+                "Operations": [
+                    {
+                        "Name": "ScanSettings",
+                        "type": "Operation",
+                        "Elements": [
+                            {
+                                "Value": "",
+                                "Variable": "",
+                                "type": "LinearLayout",
+                                "weight": "0",
+                                "height": "wrap_content",
+                                "width": "match_parent",
+                                "orientation": "vertical",
+                                "Elements": [
+                                    {
+                                        "type": "TextView",
+                                        "height": "wrap_content",
+                                        "width": "match_parent",
+                                        "weight": "0",
+                                        "Value": "Количество распознанных цен для подтверждения",
+                                        "Variable": ""
+                                    },
+                                    {
+                                        "type": "LinearLayout",
+                                        "height": "wrap_content",
+                                        "width": "match_parent",
+                                        "weight": "0",
+                                        "Value": "",
+                                        "Variable": "",
+                                        "orientation": "horizontal",
+                                        "Elements": [
+                                            {
+                                                "type": "TextView",
+                                                "height": "wrap_content",
+                                                "width": "match_parent",
+                                                "weight": "1",
+                                                "Value": "Правильных:",
+                                                "Variable": ""
+                                            },
+                                            {
+                                                "type": "EditTextNumeric",
+                                                "height": "wrap_content",
+                                                "width": "match_parent",
+                                                "weight": "1",
+                                                "Value": "@scan_settings_valid_price_amount",
+                                                "Variable": "scan_settings_valid_price_amount"
+                                            },
+                                            {
+                                                "type": "TextView",
+                                                "height": "wrap_content",
+                                                "width": "match_parent",
+                                                "weight": "1",
+                                                "Value": "Ошибок:",
+                                                "Variable": ""
+                                            },
+                                            {
+                                                "type": "EditTextNumeric",
+                                                "height": "wrap_content",
+                                                "width": "match_parent",
+                                                "weight": "1",
+                                                "Value": "@scan_settings_invalid_price_amount",
+                                                "Variable": "scan_settings_invalid_price_amount"
+                                            }
+                                        ],
+                                        "BackgroundColor": "",
+                                        "StrokeWidth": "",
+                                        "Padding": ""
+                                    },
+                                    {
+                                        "type": "Button",
+                                        "height": "wrap_content",
+                                        "width": "wrap_content",
+                                        "weight": "0",
+                                        "Value": "Сохранить",
+                                        "Variable": "btn_save_scan_settings"
+                                    }
+                                ],
+                                "BackgroundColor": "",
+                                "StrokeWidth": "",
+                                "Padding": ""
+                            }
+                        ],
+                        "Timer": false,
+                        "hideToolBarScreen": false,
+                        "noScroll": false,
+                        "handleKeyUp": false,
+                        "hideBottomBarScreen": true,
+                        "onlineOnStart": false,
+                        "onlineOnAfterStart": false,
+                        "onlineOnInput": false,
+                        "Handlers": [
+                            {
+                                "event": "onStart",
+                                "action": "run",
+                                "type": "python",
+                                "method": "scan_settings_on_start",
+                                "postExecute": ""
+                            },
+                            {
+                                "event": "onInput",
+                                "action": "run",
+                                "type": "python",
+                                "method": "scan_settings_on_input",
+                                "postExecute": ""
+                            }
+                        ]
+                    }
+                ],
+                "DefineOnBackPressed": true
             }
         ],
         "ConfigurationSettings": {
@@ -267,6 +363,15 @@
         ],
         "StyleTemplates": [],
         "arch2": true,
-        "CommonHandlers": []
+        "CommonHandlers": [
+            {
+                "alias": "on_start",
+                "event": "onLaunch",
+                "action": "run",
+                "type": "python",
+                "method": "app_on_start",
+                "postExecute": ""
+            }
+        ]
     }
 }
