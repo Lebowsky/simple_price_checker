@@ -52,26 +52,9 @@
                                         "height": "wrap_content",
                                         "width": "match_parent",
                                         "weight": "0",
-                                        "type": "TextView",
-                                        "Value": "Товаров в устройстве",
-                                        "Variable": ""
-                                    },
-                                    {
-                                        "TextBold": true,
-                                        "height": "wrap_content",
-                                        "width": "match_parent",
-                                        "weight": "0",
-                                        "type": "TextView",
-                                        "Value": "@count_goods_device",
-                                        "Variable": ""
-                                    },
-                                    {
-                                        "height": "wrap_content",
-                                        "width": "match_parent",
-                                        "weight": "0",
                                         "type": "Button",
                                         "Value": "Загрузить в устройство",
-                                        "Variable": "btn_save_to_device"
+                                        "Variable": "save_to_device"
                                     },
                                     {
                                         "height": "wrap_content",
@@ -131,12 +114,12 @@
                                         "weight": "0",
                                         "type": "Button",
                                         "Value": "Сохранить в suip",
-                                        "Variable": "btn_save_to_suip"
+                                        "Variable": "save_to_suip"
                                     },
                                     {
                                         "type": "Button",
                                         "height": "wrap_content",
-                                        "width": "wrap_content",
+                                        "width": "match_parent",
                                         "weight": "0",
                                         "Value": "Сохранить JSON",
                                         "Variable": "btn_save_to_json"
@@ -144,17 +127,9 @@
                                     {
                                         "type": "Button",
                                         "height": "wrap_content",
-                                        "width": "wrap_content",
+                                        "width": "match_parent",
                                         "weight": "0",
-                                        "Value": "Показать базу данных",
-                                        "Variable": "btn_show_db"
-                                    },
-                                    {
-                                        "type": "Button",
-                                        "height": "wrap_content",
-                                        "width": "wrap_content",
-                                        "weight": "0",
-                                        "Value": "Обновить базу данных",
+                                        "Value": "Сбросить результат проверки",
                                         "Variable": "btn_refresh_db"
                                     }
                                 ],
@@ -175,8 +150,25 @@
                                 "event": "onInput",
                                 "action": "run",
                                 "type": "python",
+                                "method": "save_to_suip",
+                                "postExecute": "",
+                                "listener": "save_to_suip"
+                            },
+                            {
+                                "event": "onInput",
+                                "action": "run",
+                                "type": "python",
+                                "method": "save_to_device",
+                                "postExecute": "",
+                                "listener": "save_to_device"
+                            },
+                            {
+                                "event": "onInput",
+                                "action": "run",
+                                "type": "python",
                                 "method": "sync_on_input",
-                                "postExecute": ""
+                                "postExecute": "",
+                                "listener": ""
                             }
                         ],
                         "onlineOnStart": false,
@@ -210,21 +202,21 @@
                                 "event": "OnCreate",
                                 "action": "run",
                                 "type": "python",
-                                "method": "on_create",
+                                "method": "price_scan_on_start",
                                 "postExecute": ""
                             },
                             {
                                 "event": "OnInput",
                                 "action": "run",
                                 "type": "python",
-                                "method": "on_input",
+                                "method": "price_scan_on_input",
                                 "postExecute": "",
                                 "listener": ""
                             }
                         ],
                         "CVCameraDevice": "Back",
                         "CVInfo": "@price_checker_info",
-                        "CVAction": ""
+                        "CVAction": "@title_cv"
                     }
                 ]
             },
@@ -249,7 +241,7 @@
                                         "type": "TextView",
                                         "height": "wrap_content",
                                         "width": "match_parent",
-                                        "weight": "0",
+                                        "weight": "1",
                                         "Value": "Количество распознанных цен для подтверждения",
                                         "Variable": ""
                                     },
@@ -257,7 +249,7 @@
                                         "type": "LinearLayout",
                                         "height": "wrap_content",
                                         "width": "match_parent",
-                                        "weight": "0",
+                                        "weight": "1",
                                         "Value": "",
                                         "Variable": "",
                                         "orientation": "horizontal",
@@ -300,10 +292,40 @@
                                         "Padding": ""
                                     },
                                     {
+                                        "type": "LinearLayout",
+                                        "height": "wrap_content",
+                                        "width": "match_parent",
+                                        "weight": "1",
+                                        "Value": "",
+                                        "Variable": "",
+                                        "orientation": "horizontal",
+                                        "Elements": [
+                                            {
+                                                "type": "CheckBox",
+                                                "height": "wrap_content",
+                                                "width": "match_parent",
+                                                "weight": "1",
+                                                "Value": "CVSingleDetector",
+                                                "Variable": "flag_cv_single_detector"
+                                            },
+                                            {
+                                                "type": "CheckBox",
+                                                "height": "wrap_content",
+                                                "width": "match_parent",
+                                                "weight": "1",
+                                                "Value": "CVSkipNested",
+                                                "Variable": "flag_cv_skip_nested"
+                                            }
+                                        ],
+                                        "BackgroundColor": "",
+                                        "StrokeWidth": "",
+                                        "Padding": ""
+                                    },
+                                    {
                                         "type": "Button",
                                         "height": "wrap_content",
                                         "width": "wrap_content",
-                                        "weight": "0",
+                                        "weight": "1",
                                         "Value": "Сохранить",
                                         "Variable": "btn_save_scan_settings"
                                     }

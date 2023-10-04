@@ -273,8 +273,8 @@ class HashMap:
 
     def set_vision_settings(
             self,
-            min_length: int = 1,
-            max_length: int = 20,
+            min_length: int = 2,
+            max_length: int = 3,
             ReplaceO: bool = False,
             ToUpcase: bool = False,
             OnlyNumbers: bool = False

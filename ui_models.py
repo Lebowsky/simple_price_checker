@@ -33,7 +33,9 @@ class MainEvents:
         # self.hash_map.toast(toast)
         rs_default_settings = {
             'scan_settings_valid_price_amount': '3',
-            'scan_settings_invalid_price_amount': '5'
+            'scan_settings_invalid_price_amount': '5',
+            'flag_cv_single_detector': 'false',
+            'flag_cv_skip_nested': 'false'
         }
         for key, value in rs_default_settings.items():
             if self.rs_settings.get(key) is None:
@@ -57,6 +59,7 @@ class SettingsScreen(Screen):
         'scan_settings_valid_price_amount',
         'scan_settings_invalid_price_amount'
     ]
+
     def __init__(self, hash_map: HashMap, rs_settings):
         super().__init__(hash_map, rs_settings)
 
@@ -68,17 +71,23 @@ class SettingsScreen(Screen):
             else:
                 value = self.rs_settings.get(variable)
                 self.hash_map.put(variable, value)
+        flag_sd = self.hash_map.get('flag_cv_single_detector')
+        flag_sd = flag_sd if flag_sd else self.rs_settings.get('flag_cv_single_detector')
+        self.hash_map.put('flag_cv_single_detector', flag_sd)
+        flag_sn = self.hash_map.get('flag_cv_skip_nested')
+        flag_sn = flag_sn if flag_sn else self.rs_settings.get('flag_cv_skip_nested')
+        self.hash_map.put('flag_cv_skip_nested', flag_sn)
 
     def on_input(self):
         listener = self.hash_map.get('listener')
-        self.hash_map.toast(listener)
         if listener == 'btn_save_scan_settings':
             for variable in self.screen_values:
                 value = self.hash_map.get(variable)
                 if value and value != '0':
                     self.hash_map.put(variable, str(int(float(value))))
                     self.rs_settings.put(variable, str(int(float(value))), True)
-
+            self.rs_settings.put('flag_cv_single_detector', self.hash_map.get('flag_cv_single_detector'), True)
+            self.rs_settings.put('flag_cv_skip_nested', self.hash_map.get('flag_cv_skip_nested'), True)
             self.hash_map.toast('Настройки сохранены')
         if listener == 'ON_BACK_PRESSED':
             self.hash_map.finish_process()
