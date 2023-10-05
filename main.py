@@ -19,7 +19,7 @@ active_cv_ncl = noClass("active_cv_ncl")
 dm_mode_ncl = noClass("dm_mode_ncl")
 PRICE_MIN_LEN = 2
 PRICE_MAX_LEN = 6
-
+finded_objects_temp_counter = {}
 
 @HashMap()
 def app_before_on_start(hash_map: HashMap):
@@ -191,8 +191,10 @@ def price_scan_on_start(hash_map: HashMap):
     active_cv_ncl.delete('last_barcode')
     active_cv_ncl.delete('last_obj_id')
     hash_map.set_vision_settings(
-        min_length=PRICE_MIN_LEN,
-        max_length=PRICE_MAX_LEN,
+        # min_length=PRICE_MIN_LEN,
+        # max_length=PRICE_MAX_LEN,
+        min_length=2,
+        max_length=6,
         ReplaceO=False,
         ToUpcase=False,
         OnlyNumbers=True
@@ -212,6 +214,8 @@ def price_scan_on_input(hash_map: HashMap):
 
 def reset_last_error(hash_map: HashMap) -> None:
     """Сбрасывает ошибку цены у последнего ценника с неверной ценой"""
+    global finded_objects_temp_counter
+    finded_objects_temp_counter = {}
     barcode = active_cv_ncl.get('last_barcode')
     if not barcode:
         hash_map.toast('Нет результатов подсчета')
@@ -233,11 +237,14 @@ def reset_last_error(hash_map: HashMap) -> None:
     price_invalid_ncl.delete(barcode)
     price_valid_ncl.delete(barcode)
     detected_ncl.delete(barcode)
+
     hash_map.put('price_checker_info', 'Штрихкод: ' + barcode + '. Подсчет сброшен.')
 
 
 def reset_all(hash_map: HashMap) -> None:
     """Полностью удаляет все результаты подсчёта"""
+    global finded_objects_temp_counter
+    finded_objects_temp_counter = {}
     hash_map.put('yellow_list', "[]")
     hash_map.put('red_list', "[]")
     hash_map.put('green_list', "[]")
@@ -262,19 +269,15 @@ def reset_all(hash_map: HashMap) -> None:
 
 @HashMap()
 def on_obj_detected(hash_map: HashMap):
-    cur_object = hash_map.get("current_object")
-    finded_values = active_cv_ncl.get(cur_object)
-    invalid_amount = int(rs_settings.get('scan_settings_invalid_price_amount'))
-    valid_amount = int(rs_settings.get('scan_settings_valid_price_amount'))
-    max_try_count = max(invalid_amount, valid_amount)
-    if not finded_values:
-        active_cv_ncl.put(cur_object, 1, True)
-    elif finded_values <= max_try_count:
-        active_cv_ncl.put(cur_object, finded_values + 1, True)
-    elif finded_values > max_try_count:
+    current_object = hash_map.get("current_object")
+    global finded_objects_temp_counter
+    if current_object not in finded_objects_temp_counter:
+        finded_objects_temp_counter[current_object] = 1
+    elif finded_objects_temp_counter[current_object] < rs_settings.get('objects_find_limit'):
+        finded_objects_temp_counter[current_object] += 1
+    else:
         return
-
-    current_object = json.loads(cur_object)
+    current_object = json.loads(hash_map.get("current_object"))
     if dm_mode_ncl.get(str(current_object['object_id'])) == 'stop':
         return
     obj_value = current_object['value']
@@ -282,6 +285,8 @@ def on_obj_detected(hash_map: HashMap):
         if obj_value.isdigit():
             barcode_input(hash_map, current_object['object_id'], obj_value)
     else:
+        if obj_value.startswith('0'):
+            return
         price_input(hash_map, current_object['object_id'], obj_value)
 
 
@@ -325,12 +330,15 @@ def price_input(hash_map: HashMap, current_object_id: int, price: str):
         if not valid_prices:
             price_valid_ncl.put(barcode, json.dumps([price]), True)
             hash_map.put('price_checker_info',
-                         f"{barcode} Реальная цена: {item['price']} Найдено: {price}")
-        elif len(valid_prices) < int(rs_settings.get('scan_settings_valid_price_amount')):
+                         f"{barcode} Реальная цена: {item['price']} Найдено: {[price]}")
+        elif len(valid_prices) + 1 < int(rs_settings.get('scan_settings_valid_price_amount')):
             price_valid_ncl.put(barcode, json.dumps(valid_prices + [price]), True)
             hash_map.put('price_checker_info',
                          f"{barcode} Реальная цена: {item['price']} Найдено: {valid_prices + [price]}")
         else:
+            price_valid_ncl.put(barcode, json.dumps(valid_prices + [price]), True)
+            hash_map.put('price_checker_info',
+                         f"{barcode} Реальная цена: {item['price']} Найдено: {valid_prices + [price]}")
             confirm_object(hash_map, current_object_id, barcode, item)
             item.update(confirmed=True)
             prices_ncl.put(barcode, json.dumps(item), True)
@@ -344,12 +352,15 @@ def price_input(hash_map: HashMap, current_object_id: int, price: str):
         if not errors:
             price_invalid_ncl.put(barcode, json.dumps([price]), True)
             hash_map.put('price_checker_info',
-                         f"{barcode} Реальная цена: {item['price']} Найдено: {price}")
-        elif len(errors) < int(rs_settings.get('scan_settings_invalid_price_amount')):
+                         f"{barcode} Реальная цена: {item['price']} Найдено: {[price]}")
+        elif len(errors) + 1 < int(rs_settings.get('scan_settings_invalid_price_amount')):
             price_invalid_ncl.put(barcode,json.dumps(errors + [price]), True)
             hash_map.put('price_checker_info',
                          f"{barcode} Реальная цена: {item['price']} Найдено: {errors + [price]}")
         else:
+            price_invalid_ncl.put(barcode,json.dumps(errors + [price]), True)
+            hash_map.put('price_checker_info',
+                         f"{barcode} Реальная цена: {item['price']} Найдено: {errors + [price]}")
             decline_object(hash_map, current_object_id, barcode, item)
             item.update(confirmed=False)
             prices_ncl.put(barcode, json.dumps(item), True)

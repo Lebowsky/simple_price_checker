@@ -55,22 +55,23 @@ class Screen(ABC):
 class SettingsScreen(Screen):
     screen_name = 'ScanSettings'
     process_name = 'Settings'
-    screen_values = [
-        'scan_settings_valid_price_amount',
-        'scan_settings_invalid_price_amount'
-    ]
 
     def __init__(self, hash_map: HashMap, rs_settings):
         super().__init__(hash_map, rs_settings)
 
     def on_start(self):
-        for variable in self.screen_values:
-            value = self.hash_map.get(variable)
-            if value and value != '0':
-                self.hash_map.put(variable, str(int(float(value))))
-            else:
-                value = self.rs_settings.get(variable)
-                self.hash_map.put(variable, value)
+        valid_price_amount = self.hash_map.get('scan_settings_valid_price_amount')
+        if valid_price_amount and valid_price_amount != 0:
+            self.hash_map.put('scan_settings_valid_price_amount', str(int(float(valid_price_amount))))
+        else:
+            value = self.rs_settings.get('scan_settings_valid_price_amount')
+            self.hash_map.put('scan_settings_valid_price_amount', value)
+        invalid_price_amount = self.hash_map.get('scan_settings_invalid_price_amount')
+        if invalid_price_amount and invalid_price_amount != 0:
+            self.hash_map.put('scan_settings_invalid_price_amount', str(int(float(invalid_price_amount))))
+        else:
+            value = self.rs_settings.get('scan_settings_invalid_price_amount')
+            self.hash_map.put('scan_settings_invalid_price_amount', value)
         flag_sd = self.hash_map.get('flag_cv_single_detector')
         flag_sd = flag_sd if flag_sd else self.rs_settings.get('flag_cv_single_detector')
         self.hash_map.put('flag_cv_single_detector', flag_sd)
@@ -81,13 +82,20 @@ class SettingsScreen(Screen):
     def on_input(self):
         listener = self.hash_map.get('listener')
         if listener == 'btn_save_scan_settings':
-            for variable in self.screen_values:
-                value = self.hash_map.get(variable)
-                if value and value != '0':
-                    self.hash_map.put(variable, str(int(float(value))))
-                    self.rs_settings.put(variable, str(int(float(value))), True)
+            valid_price_amount = self.hash_map.get('scan_settings_valid_price_amount')
+            self.hash_map.put('scan_settings_valid_price_amount', str(int(float(valid_price_amount))))
+            self.rs_settings.put('scan_settings_valid_price_amount', str(int(float(valid_price_amount))), True)
+
+            invalid_price_amount = self.hash_map.get('scan_settings_invalid_price_amount')
+            self.hash_map.put('scan_settings_invalid_price_amount', str(int(float(invalid_price_amount))))
+            self.rs_settings.put('scan_settings_invalid_price_amount', str(int(float(invalid_price_amount))), True)
+
             self.rs_settings.put('flag_cv_single_detector', self.hash_map.get('flag_cv_single_detector'), True)
             self.rs_settings.put('flag_cv_skip_nested', self.hash_map.get('flag_cv_skip_nested'), True)
+
+            self.rs_settings.put('objects_find_limit',
+                                 max(int(float(valid_price_amount)), int(float(invalid_price_amount))), True)
+
             self.hash_map.toast('Настройки сохранены')
         if listener == 'ON_BACK_PRESSED':
             self.hash_map.finish_process()
