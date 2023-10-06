@@ -381,6 +381,10 @@
             {
                 "PyFileKey": "ui_utils",
                 "PyFileData": ""
+            },
+            {
+                "PyFileKey": "price_checker",
+                "PyFileData": ""
             }
         ],
         "StyleTemplates": [],

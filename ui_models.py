@@ -34,6 +34,8 @@ class MainEvents:
         rs_default_settings = {
             'scan_settings_valid_price_amount': '3',
             'scan_settings_invalid_price_amount': '5',
+            'price_min_length': 2,
+            'price_max_length': 6,
             'flag_cv_single_detector': 'false',
             'flag_cv_skip_nested': 'false'
         }
