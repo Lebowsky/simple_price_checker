@@ -1,1 +1,195 @@
-import jsonfrom java import jclassfrom ru.travelfood.simple_ui import SimpleUtilites as suClassimport ui_modelsnoClass = jclass("ru.travelfood.simple_ui.NoSQL")rs_settings = noClass("rs_settings")prices_ncl = noClass("price_ncl")yellow_list_ncl = noClass("yellow_list_ncl")price_valid_ncl = noClass("price_valid_ncl")from ui_utils import HashMap@HashMap()def app_before_on_start(hash_map: HashMap):    """    Обработчик при старте приложения запускается перед app_on_start    нужнен для определения версии конфигурации в последующем    """    model = ui_models.MainEvents(hash_map, rs_settings)    model.app_before_on_start()@HashMap()def app_on_start(hash_map: HashMap):    """ Обработчик при старте приложения """    model = ui_models.MainEvents(hash_map, rs_settings)    model.app_on_start()@HashMap()def sync_on_start(hash_map: HashMap): # Экран: Синхронизация  Обр ПриЗапуске    if hash_map.containsKey("prices"):        prices = json.loads(hash_map.get("prices"))        hash_map.put("_prices", hash_map.get("prices"))        hash_map.put("count_goods_file", str(len(prices)))    else:        hash_map.put("count_goods_file", "suip-файл не открыт")    if hash_map.containsKey("_prices"):        prices = json.loads(hash_map.get("_prices"))        hash_map.put("count_goods_device", str(len(prices)))    else:        hash_map.put("count_goods_device", "нет товаров")    price_ncl = noClass("price_ncl")    res = json.loads(price_ncl.findJSON("confirmed", True))    hash_map.put("count_detected", str(len(res)))@HashMap()def save_to_device(hash_map: HashMap):  # Соб:onInput listener: btn_read Действ: run Тип обраб: python    # Метод: save_to_device    if hash_map.containsKey("prices"):        prices_str = hash_map.get("_prices")        ncl = noClass("pricechecker_kit")        ncl.put("prices", prices_str, True)        hash_map.put("toast", "Сохранение завершено")@HashMap()def del_from_device(hash_map: HashMap):    ncl = noClass("pricechecker_kit")    ncl.delete("prices")    hash_map.put("toast", "Удаление завершено")@HashMap()def show_db(hash_map: HashMap):    ncl = noClass("pricechecker_kit")    prices_str = ncl.get("prices")    hash_map.put('toast', json.dumps(prices_str))@HashMap()def add_test(hash_map: HashMap):    ncl = noClass("pricechecker_kit")    price_ncl = noClass("price_ncl")    price_ncl.destroy()    prices = ncl.get('prices')    if not prices:        hash_map.toast('Список товаров prices пуст.')        return    for item in json.loads(prices):        price_ncl.put(item['barcode'],                      json.dumps({'price': item['price'], 'name': item['name']}), True)    hash_map.toast('Перенос товаров успешно завершён')@HashMap()def save_to_suip(hash_map: HashMap):  # Соб:onInput listener: btn_save Действ: run Тип обраб: python Метод: save_to_suip    ncl = noClass("pricechecker_kit")    prices_str = ncl.get("prices")    hash_map.put("NoProcessSUIP", '')    hash_map.put("NoPyHandlersSUIP", '')    detected = hash_map.get("_detected", from_json=True) or []    confirmed = hash_map.get("_confirmed", from_json=True) or []    prices = json.loads(prices_str)    _data = {        "prices" : prices,        "confirmed": confirmed,        "detected": detected    }    hash_map.put("_data", json.dumps(_data))    hash_map.toast('Успешно')@HashMap()def on_create(hash_map: HashMap):    # hash_map.put('CVSingleDetector', '')    hash_map.put('CVDetectors', 'barcode')    hash_map.put('CVSkipNested', '')    yellow_list_ncl.destroy()    price_valid_ncl.destroy()    hash_map.delete('red_list')    hash_map.delete('green_list')    hash_map.delete('yellow_list')def write_caption(hash_map: HashMap, object_id: int, caption: str):    hash_map.add_to_cv_list(        {'object_id': object_id, 'mode': 'stop'},        'object_detector_mode', _dict=True)    caption_data = {'object': str(object_id), 'caption': caption}    hash_map.add_to_cv_list(caption_data, 'object_caption_list', _dict=True)    hash_map.remove_from_cv_list(str(object_id), 'yellow_list')    yellow_list_ncl.delete(str(object_id))def confirm_object(hash_map: HashMap, object_id: int, barcode: str, item: dict):    hash_map.add_to_cv_list(str(object_id), 'green_list')    caption = item['name'] + ", <b> Цена: " + str(item['price']) + "</b>"    item.update(confirmed=True)    prices_ncl.put(barcode, json.dumps(item), True)    write_caption(hash_map, object_id, caption)def decline_object(hash_map: HashMap, object_id: int, barcode: str, item: dict):    hash_map.add_to_cv_list(str(object_id), 'red_list')    caption = item['name'] + ", <b> Цена: " + str(        item['price']) + "</b>. Цена не совпадает!"    item.update(confirmed=False)    prices_ncl.put(barcode, json.dumps(item), True)    write_caption(hash_map, object_id, caption)def barcode_input(hash_map: HashMap, current_object_id: int, barcode: str):    item = prices_ncl.get(barcode)    if not item:        # Возможна логика для штрихкодов не из этого документа        return    item = json.loads(item)    confirmed = item.get('confirmed')    if confirmed is None:        hash_map.add_to_cv_list(str(current_object_id), 'yellow_list')        yellow_list_ncl.put(str(current_object_id), barcode, True)        hash_map.add_to_cv_list(            {'object_id': current_object_id, 'mode': 'ocr'},            'object_detector_mode', _dict=True)    elif confirmed is True:        confirm_object(hash_map, current_object_id, barcode, item)    elif confirmed is False:        decline_object(hash_map, current_object_id, barcode, item)def price_input(hash_map: HashMap, current_object_id: int, price: str):    barcode = yellow_list_ncl.get(str(current_object_id))    if not barcode:        return    item = json.loads(prices_ncl.get(barcode))    price = price.replace(' ', '').replace('o', '0').replace('O', '0')    price = ''.join([letter for letter in price if letter.isdigit()])    if not price:        return    hash_map.toast('price: ' + price + ';' + 'item_price: ' + str(item['price']))    if price == str(item['price']):        confirm_object(hash_map, current_object_id, barcode, item)    else:        errors_count = price_valid_ncl.get(str(current_object_id))        if errors_count is None:            price_valid_ncl.put(str(current_object_id), 1, True)        elif errors_count < 10:            price_valid_ncl.put(str(current_object_id), errors_count + 1, True)        else:            decline_object(hash_map, current_object_id, barcode, item)@HashMap()def ob_detected(hash_map: HashMap):    current_object = json.loads(hash_map.get("current_object"))    obj_value = current_object['value']    if not obj_value:        return    valid_barcode = len(obj_value) > 9 and obj_value.isdigit()    if valid_barcode:        barcode_input(hash_map, current_object['object_id'], obj_value)    else:        price_input(hash_map, current_object['object_id'], obj_value)
+import json
+import os.path
+
+from java import jclass
+
+from ru.travelfood.simple_ui import SimpleUtilites as suClass
+
+import ui_models
+from ui_utils import HashMap, HashMapDecorator
+from price_checker import PriceChecker
+noClass = jclass("ru.travelfood.simple_ui.NoSQL")
+rs_settings = noClass("rs_settings")
+prices_ncl = noClass("prices_ncl")
+detected_ncl = noClass("detected_ncl")
+finded_objects_temp_counter = {}
+
+
+@HashMapDecorator()
+def app_before_on_start(hash_map: HashMap):
+    """
+    Обработчик при старте приложения запускается перед app_on_start
+    нужнен для определения версии конфигурации в последующем
+    """
+    model = ui_models.MainEvents(hash_map, rs_settings)
+    model.app_before_on_start()
+
+
+@HashMapDecorator()
+def app_on_start(hash_map: HashMap):
+    """ Обработчик при старте приложения """
+
+    model = ui_models.MainEvents(hash_map, rs_settings)
+    model.app_on_start()
+
+
+@HashMapDecorator()
+def sync_on_start(hash_map: HashMap): # Экран: Синхронизация  Обр ПриЗапуске
+    if hash_map.containsKey("prices"):
+        prices = json.loads(hash_map.get("prices"))
+        hash_map.put("_prices", hash_map.get("prices"))
+        hash_map.put("count_goods_file", str(len(prices)))
+    else:
+        hash_map.put("count_goods_file", "suip-файл не открыт")
+
+    if hash_map.containsKey("_prices"):
+        prices = json.loads(hash_map.get("_prices"))
+        hash_map.put("count_goods_device", str(len(prices)))
+    else:
+        hash_map.put("count_goods_device", "нет товаров")
+
+    confirmed = json.loads(prices_ncl.findJSON("confirmed", True))
+    hash_map.put("count_detected", str(len(confirmed)))
+    declined = json.loads(prices_ncl.findJSON("confirmed", False))
+    hash_map.put("count_declined", str(len(declined)))
+    count_all_nosql = len(json.loads(prices_ncl.getallkeys()))
+    hash_map.put("count_all_nosql", str(count_all_nosql))
+
+
+@HashMapDecorator()
+def save_to_device(hash_map: HashMap):
+    if hash_map.containsKey("prices"):
+        prices_str = hash_map.get("_prices")
+        ncl = noClass("pricechecker_kit")
+        ncl.put("prices", prices_str, True)
+
+        prices_ncl.destroy()
+        prices = json.loads(prices_str)
+        for item in prices:
+            prices_ncl.put(
+                item['barcode'],
+                json.dumps({
+                    'price': item['price'],
+                    'name': item['name'],
+                    'barcode': item['barcode']}, ensure_ascii=False)
+                , True
+            )
+
+        hash_map.put("toast", "Сохранение завершено")
+
+
+@HashMapDecorator()
+def save_to_suip(hash_map: HashMap):
+    ncl = noClass("pricechecker_kit")
+    prices_str = ncl.get("prices")
+    hash_map.put("NoProcessSUIP", '')
+    hash_map.put("NoPyHandlersSUIP", '')
+    detected = hash_map.get("_detected", from_json=True) or []
+    confirmed = hash_map.get("_confirmed", from_json=True) or []
+    prices = json.loads(prices_str)
+
+    conf = json.loads(prices_ncl.findJSON("confirmed", True))
+
+    for elem in conf:
+        for price in prices:
+            if price['barcode'] == elem['key']:
+                confirmed.append(price)
+    decl = json.loads(prices_ncl.findJSON("confirmed", True))
+    for elem in decl:
+        for price in prices:
+            if price['barcode'] == elem['key']:
+                detected.append(price)
+    _data = {
+        "prices" : prices,
+        "confirmed": confirmed,
+        "detected": detected + confirmed
+    }
+    hash_map.put("_data", json.dumps(_data))
+    hash_map.toast('Успешно')
+
+
+@HashMapDecorator()
+def sync_on_input(hash_map: HashMap):
+    listener = hash_map.get('listener')
+    if listener == 'btn_refresh_db':
+        ncl = noClass("pricechecker_kit")
+        prices_ncl.destroy()
+        detected_ncl.destroy()
+        prices = ncl.get('prices')
+        if not prices:
+            hash_map.toast('Список товаров prices пуст.')
+            return
+        for item in json.loads(prices):
+            data = {
+                'price': item['price'],
+                'name': item['name'],
+                'barcode': item['barcode']
+            }
+            prices_ncl.put(item['barcode'], json.dumps(data, ensure_ascii=False), True)
+        hash_map.toast('Данные обновлены')
+
+    elif listener == 'btn_save_to_json':
+        directory = suClass.get_temp_dir()
+        path = os.path.join(directory, 'saved_json.json')
+        prices = []
+        confirmed = []
+        declined = []
+        detected = []
+        with open(path, 'w') as f:
+            for key in json.loads(prices_ncl.getallkeys()):
+                item = json.loads(prices_ncl.get(key))
+                prices.append(item)
+                if 'confirmed' in item:
+                    detected.append(item)
+                    if item['confirmed'] is True:
+                        confirmed.append(item)
+                    else:
+                        declined.append(item)
+
+            _data = {
+                "prices": prices,
+                "confirmed": confirmed,
+                "declined": declined,
+                "detected": detected,
+            }
+            json.dump(_data, f, indent=4, ensure_ascii=False)
+        file_data = {'path': path, "default": 'saved_json.json'}
+        hash_map.put('SaveExternalFile', json.dumps(file_data))
+
+    elif listener == 'FileSave':
+        hash_map.toast('Файл сохранен в Загрузки')
+
+
+@HashMapDecorator()
+def scan_settings_on_start(hash_map: HashMap):
+    screen = ui_models.SettingsScreen(hash_map, rs_settings)
+    screen.on_start()
+
+
+@HashMapDecorator()
+def scan_settings_on_input(hash_map: HashMap):
+    screen = ui_models.SettingsScreen(hash_map, rs_settings)
+    screen.on_input()
+
+
+@HashMapDecorator()
+def price_scan_on_start(hash_map: HashMap):
+    PriceChecker(hash_map).price_scan_on_start()
+
+
+@HashMapDecorator()
+def price_scan_on_input(hash_map: HashMap):
+    PriceChecker(hash_map).price_scan_on_input()
+
+
+def on_obj_detected(hashMap, _files=None, _data=None):
+    global finded_objects_temp_counter
+    current_object = hashMap.get("current_object")
+    if current_object not in finded_objects_temp_counter:
+        finded_objects_temp_counter[current_object] = 1
+    elif finded_objects_temp_counter[current_object] < rs_settings.get('objects_find_limit'):
+        finded_objects_temp_counter[current_object] += 1
+    else:
+        return
+    PriceChecker(hashmap=HashMap(hashMap)).handle_value()
+    return hashMap
